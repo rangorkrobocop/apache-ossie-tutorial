@@ -48,3 +48,27 @@ tasks.named('test') {
         events 'passed', 'skipped', 'failed'
     }
 }
+
+// -------------------------------------------------------------
+// Step-by-Step Hands-On Tasks
+// -------------------------------------------------------------
+def steps = [
+    [name: 'step1', class: 'Step1_CoreConceptsAndModelLoading', desc: 'Step 1: Core Concepts & Model Loading'],
+    [name: 'step2', class: 'Step2_SemanticValidation', desc: 'Step 2: Semantic Integrity Validation'],
+    [name: 'step3', class: 'Step3_Layer1_ExpressionsAndDialects', desc: 'Step 3: Layer 1 - Expressions & Dialects'],
+    [name: 'step4', class: 'Step4_Layer2_RelationalGraphAndJoins', desc: 'Step 4: Layer 2 - Relational Graph & Multi-Hop Joins'],
+    [name: 'step5', class: 'Step5_Layer3_WideTableQueryCompilation', desc: 'Step 5: Layer 3 - Wide-Table Query Compilation'],
+    [name: 'step6', class: 'Step6_ExecutingSemanticQueriesOnDatabase', desc: 'Step 6: Executing Queries on Real Database'],
+    [name: 'step7', class: 'Step7_AiGroundingAndMcpTools', desc: 'Step 7: AI Grounding & MCP Tools'],
+    [name: 'step8', class: 'Step8_CrossPlatformInterchange', desc: 'Step 8: Cross-Platform Interchange (dbt & Snowflake)']
+]
+
+steps.each { stepInfo ->
+    tasks.register(stepInfo.name, JavaExec) {
+        group = 'ossie-tutorial'
+        description = stepInfo.desc
+        classpath = sourceSets.main.runtimeClasspath
+        mainClass = "org.apache.ossie.tutorial.steps.${stepInfo.class}"
+        standardInput = System.in
+    }
+}

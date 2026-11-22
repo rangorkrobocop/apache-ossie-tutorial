@@ -36,8 +36,16 @@ public class SnowflakeSemanticModelConverter {
                 if (ds.getMetrics() != null) {
                     for (int i = 0; i < ds.getMetrics().size(); i++) {
                         Metric m = ds.getMetrics().get(i);
-                        String expr = m.getExpression() != null ? m.getExpression().getSql() : "NULL";
-                        sb.append("  ").append(expr).append(" AS ").append(m.getName());
+                        String expr = m.getExpression() != null
+                                ? m.getExpression().resolveForDialect(org.apache.ossie.tutorial.model.SqlDialect.SNOWFLAKE)
+                                : "NULL";
+                        if (expr == null) {
+                            expr = m.getExpression().getSql();
+                        }
+                        if (expr != null && expr.contains("source.")) {
+                            expr = expr.replace("source.", "");
+                        }
+                        sb.append("  ").append(expr != null ? expr : "NULL").append(" AS ").append(m.getName());
                         if (i < ds.getMetrics().size() - 1) sb.append(",");
                         sb.append("\n");
                     }

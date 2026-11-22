@@ -54,8 +54,10 @@ public class DbtMetricFlowConverter {
                         sb.append("      - name: ").append(m.getName()).append("\n");
                         sb.append("        description: \"").append(m.getDescription() != null ? m.getDescription() : "").append("\"\n");
                         sb.append("        agg: sum\n");
-                        String expr = m.getExpression() != null ? m.getExpression().getSql() : m.getName();
-                        sb.append("        expr: ").append(expr != null ? expr : m.getName()).append("\n");
+                        String expr = m.getExpression() != null
+                                ? m.getExpression().resolveForDialect(org.apache.ossie.tutorial.model.SqlDialect.ANSI_SQL)
+                                : m.getName();
+                        sb.append("        expr: \"").append(expr != null ? expr : m.getName()).append("\"\n");
                     }
                 }
                 sb.append("\n");
