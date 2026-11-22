@@ -1,0 +1,21 @@
+version: "0.3.0"
+name: "flawed_semantic_model"
+description: "A model containing intentional errors used to demonstrate Ossie validator diagnostics."
+
+datasets:
+  - name: "inventory"
+    # Notice: missing primary_key declaration
+    fields:
+      - name: "item_id"
+        datatype: "Integer"
+      - name: "quantity"
+        datatype: "Integer"
+
+relationships:
+  # Error 1: 'to' dataset warehouse does not exist in datasets list
+  - name: "inventory_to_warehouse"
+    from: "inventory"
+    to: "warehouse"
+    from_columns: ["warehouse_id"]
+    to_columns: ["id"]
+    cardinality: "many_to_one"

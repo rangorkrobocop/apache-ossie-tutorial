@@ -1,0 +1,73 @@
+version: "0.3.0"
+name: "saas_subscription_analytics"
+description: "Apache Ossie model for B2B SaaS subscription and account analytics."
+
+ai_context:
+  instructions: |
+    Use this model to compute recurring revenue (MRR, ARR) and account lifecycle analytics.
+
+datasets:
+  - name: "accounts"
+    source: "accounts"
+    description: "B2B client organizations"
+    primary_key: ["account_id"]
+    fields:
+      - name: "account_id"
+        datatype: "Integer"
+        is_primary_key: true
+      - name: "account_name"
+        datatype: "String"
+      - name: "tier"
+        datatype: "String"
+        dimension:
+          cardinality: "low"
+          synonyms: ["plan level", "pricing tier"]
+
+  - name: "subscriptions"
+    source: "subscriptions"
+    description: "Active and historical recurring subscription contracts"
+    primary_key: ["subscription_id"]
+    fields:
+      - name: "subscription_id"
+        datatype: "Integer"
+        is_primary_key: true
+      - name: "account_id"
+        datatype: "Integer"
+      - name: "start_date"
+        datatype: "Date"
+        dimension:
+          is_time: true
+          time_grains: ["month", "quarter", "year"]
+      - name: "monthly_rate"
+        datatype: "Decimal"
+      - name: "status"
+        datatype: "String"
+        dimension:
+          cardinality: "low"
+    metrics:
+      - name: "monthly_recurring_revenue"
+        description: "Total Monthly Recurring Revenue (MRR)"
+        datatype: "Decimal"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "SUM(source.monthly_rate)"
+        ai_context:
+          synonyms: ["mrr", "subscription revenue", "recurring run rate"]
+      - name: "annual_recurring_revenue"
+        description: "Normalized Annual Recurring Revenue (ARR)"
+        datatype: "Decimal"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "SUM(source.monthly_rate) * 12"
+        ai_context:
+          synonyms: ["arr", "annual run rate"]
+
+relationships:
+  - name: "subscriptions_to_accounts"
+    from: "subscriptions"
+    to: "accounts"
+    from_columns: ["account_id"]
+    to_columns: ["account_id"]
+    cardinality: "many_to_one"

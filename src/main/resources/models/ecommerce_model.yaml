@@ -1,0 +1,182 @@
+version: "0.3.0"
+name: "ecommerce_sales_analytics"
+description: "Universal semantic model for Retail and E-Commerce sales, customer behavior, and product metrics."
+
+ai_context:
+  instructions: |
+    Use this semantic model for all retail analytics inquiries including revenue, orders, customers, and product performance.
+    Always use 'total_revenue' for sales volume and 'customer_count' for reach.
+    For monthly trends, slice by 'orders.order_date[month]'.
+
+datasets:
+  - name: "customers"
+    source: "customers"
+    description: "Registered customer directory and demographic attributes"
+    primary_key: ["customer_id"]
+    ai_context:
+      instructions: "Contains customer profiling information including geographic region and loyalty status."
+    fields:
+      - name: "customer_id"
+        datatype: "Integer"
+        is_primary_key: true
+        description: "Unique surrogate key for customer"
+      - name: "customer_name"
+        datatype: "String"
+        description: "Full name of the customer"
+        dimension:
+          cardinality: "high"
+      - name: "country"
+        datatype: "String"
+        description: "Customer country of residence"
+        dimension:
+          cardinality: "low"
+          synonyms: ["nation", "location", "geography"]
+      - name: "status"
+        datatype: "String"
+        description: "Customer account status (ACTIVE, INACTIVE, CHURNED)"
+        dimension:
+          cardinality: "low"
+          synonyms: ["account state", "membership"]
+    metrics:
+      - name: "customer_count"
+        description: "Total count of registered customers"
+        datatype: "Integer"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "COUNT(DISTINCT source.customer_id)"
+        ai_context:
+          synonyms: ["users", "registered buyers", "client count"]
+
+  - name: "orders"
+    source: "orders"
+    description: "Order header transactions with timestamps and totals"
+    primary_key: ["order_id"]
+    fields:
+      - name: "order_id"
+        datatype: "Integer"
+        is_primary_key: true
+      - name: "customer_id"
+        datatype: "Integer"
+        description: "Foreign key reference to customers"
+      - name: "order_date"
+        datatype: "Date"
+        description: "Date when order was placed"
+        dimension:
+          is_time: true
+          time_grains: ["day", "week", "month", "quarter", "year"]
+          synonyms: ["purchase date", "transaction date", "sale date"]
+      - name: "total_amount"
+        datatype: "Decimal"
+        description: "Total order invoice value"
+      - name: "order_status"
+        datatype: "String"
+        description: "Fulfillment status: COMPLETED, PENDING, CANCELLED"
+        dimension:
+          cardinality: "low"
+    metrics:
+      - name: "total_revenue"
+        description: "Total gross revenue generated from orders"
+        datatype: "Decimal"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "SUM(source.total_amount)"
+        ai_context:
+          synonyms: ["sales", "gross merchandise value", "gmv", "turnover", "income"]
+      - name: "order_count"
+        description: "Total number of completed orders"
+        datatype: "Integer"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "COUNT(DISTINCT source.order_id)"
+        ai_context:
+          synonyms: ["total orders", "number of purchases", "transaction count"]
+      - name: "average_order_value"
+        description: "Average revenue per order"
+        datatype: "Decimal"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "AVG(source.total_amount)"
+        ai_context:
+          synonyms: ["aov", "basket size", "average ticket"]
+
+  - name: "order_items"
+    source: "order_items"
+    description: "Line item details for each order"
+    primary_key: ["order_item_id"]
+    fields:
+      - name: "order_item_id"
+        datatype: "Integer"
+        is_primary_key: true
+      - name: "order_id"
+        datatype: "Integer"
+      - name: "product_id"
+        datatype: "Integer"
+      - name: "quantity"
+        datatype: "Integer"
+        description: "Units purchased in this line item"
+      - name: "unit_price"
+        datatype: "Decimal"
+    metrics:
+      - name: "total_units_sold"
+        description: "Total volume of product units sold"
+        datatype: "Integer"
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: "SUM(source.quantity)"
+        ai_context:
+          synonyms: ["volume", "quantity sold", "units"]
+
+  - name: "products"
+    source: "products"
+    description: "Product catalog and hierarchy"
+    primary_key: ["product_id"]
+    fields:
+      - name: "product_id"
+        datatype: "Integer"
+        is_primary_key: true
+      - name: "product_name"
+        datatype: "String"
+        dimension:
+          cardinality: "high"
+      - name: "category"
+        datatype: "String"
+        dimension:
+          cardinality: "low"
+          synonyms: ["product line", "department"]
+      - name: "cost_price"
+        datatype: "Decimal"
+
+relationships:
+  - name: "orders_to_customers"
+    description: "Joins order transactions to customer profiles"
+    from: "orders"
+    to: "customers"
+    from_columns: ["customer_id"]
+    to_columns: ["customer_id"]
+    cardinality: "many_to_one"
+    join_type: "left_outer"
+    ai_context:
+      synonyms: ["customer order history", "purchasing user"]
+
+  - name: "order_items_to_orders"
+    description: "Links line items to their parent order"
+    from: "order_items"
+    to: "orders"
+    from_columns: ["order_id"]
+    to_columns: ["order_id"]
+    cardinality: "many_to_one"
+    join_type: "inner"
+
+  - name: "order_items_to_products"
+    description: "Links line items to product catalog"
+    from: "order_items"
+    to: "products"
+    from_columns: ["product_id"]
+    to_columns: ["product_id"]
+    cardinality: "many_to_one"
+    join_type: "left_outer"
